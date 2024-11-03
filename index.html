@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Chat App</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyALG2cJ1RIVlHx5otWkiDUcSilZi4wvnyI",
+  authDomain: "chatbot-52b13.firebaseapp.com",
+  projectId: "chatbot-52b13",
+  storageBucket: "chatbot-52b13.firebasestorage.app",
+  messagingSenderId: "803248756764",
+  appId: "1:803248756764:web:9a12a29fe499f35bcfe7d9",
+  measurementId: "G-H8K84FRRS1"
+        };
+
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Listen for authentication state changes
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                document.getElementById('userEmail').textContent = user.email;
+                loadMessages();
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('chatArea').style.display = 'block';
+            } else {
+                document.getElementById('userEmail').textContent = 'Not logged in';
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('chatArea').style.display = 'none';
+            }
+        });
+
+        // Load messages from Firestore
+        function loadMessages() {
+            const messagesRef = collection(db, "messages");
+            const q = query(messagesRef, orderBy("timestamp"));
+            onSnapshot(q, (snapshot) => {
+                const messagesList = document.getElementById('messagesList');
+                messagesList.innerHTML = ""; // Clear previous messages
+                snapshot.forEach((doc) => {
+                    const msg = doc.data();
+                    const li = document.createElement('li');
+                    li.textContent = `${msg.email}: ${msg.text}`;
+                    messagesList.appendChild(li);
+                });
+            });
+        }
+
+        // Send a message
+        async function sendMessage() {
+            const messageText = document.getElementById('messageInput').value;
+            const user = auth.currentUser;
+            if (user && messageText) {
+                await addDoc(collection(db, "messages"), {
+                    text: messageText,
+                    email: user.email,
+                    timestamp: new Date()
+                });
+                document.getElementById('messageInput').value = ''; // Clear input
+            } else {
+                alert('Please log in and enter a message.');
+            }
+        }
+
+        // Register new user
+        async function registerUser() {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                alert('User registered successfully! You can now log in.');
+            } catch (error) {
+                console.error('Error registering:', error.message);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Log in user
+        async function loginUser() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                alert('User logged in successfully!');
+            } catch (error) {
+                console.error('Error logging in:', error.message);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Log out user
+        async function logoutUser() {
+            await signOut(auth);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('sendBtn').onclick = sendMessage;
+            document.getElementById('registerBtn').onclick = registerUser;
+            document.getElementById('loginBtn').onclick = loginUser;
+            document.getElementById('logoutBtn').onclick = logoutUser;
+        });
+    </script>
+</head>
+<body>
+    <h1>Chat Application</h1>
+    <div>
+        <span>User: <strong id="userEmail"></strong></span>
+        <button id="logoutBtn" style="display:none;">Log Out</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm" style="display:none;">
+        <h2>Login</h2>
+        <input type="email" id="loginEmail" placeholder="Email" />
+        <input type="password" id="loginPassword" placeholder="Password" />
+        <button id="loginBtn">Login</button>
+    </div>
+
+    <!-- Registration Form -->
+    <div id="registerForm">
+        <h2>Register</h2>
+        <input type="email" id="registerEmail" placeholder="Email" />
+        <input type="password" id="registerPassword" placeholder="Password" />
+        <button id="registerBtn">Register</button>
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chatArea" style="display:none;">
+        <ul id="messagesList"></ul>
+        <input type="text" id="messageInput" placeholder="Type a message..." />
+        <button id="sendBtn">Send</button>
+    </div>
+</body>
+</html>
