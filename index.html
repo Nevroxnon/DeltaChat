@@ -103,6 +103,7 @@
         // Log out user
         async function logoutUser() {
             await signOut(auth);
+            window.location.reload();
         }
 
         // Event listeners
