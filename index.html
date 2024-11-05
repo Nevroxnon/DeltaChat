@@ -51,7 +51,7 @@
                 snapshot.forEach((doc) => {
                     const msg = doc.data();
                     const li = document.createElement('li');
-                    li.textContent = `${msg.email}: ${msg.text}`;
+                    li.textContent = `${msg.email.split("@")[0]}: ${msg.text}`;
                     messagesList.appendChild(li);
                 });
             });
